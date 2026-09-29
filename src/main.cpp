@@ -95,6 +95,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "activities/reader/KOReaderSyncActivity.h"
 #include "activities/reader/ReadingStatsUtils.h"
 #include "activities/reader/StatsBackup.h"
+#include "activities/network/SubstackFetchActivity.h"
 #include "activities/settings/FontDownloadActivity.h"
 #include "activities/settings/KOReaderAuthActivity.h"
 #include "activities/settings/KOReaderSettingsActivity.h"
@@ -469,6 +470,14 @@ bool isGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action) {
   return isPowerButtonActionAvailableOutsideReader(action);
 }
 
+bool startSubstackFetch() {
+  auto handoff = makeUniqueNoThrow<SubstackFetchActivity>(renderer, mappedInputManager,
+                                                          SubstackFetchActivity::Stage::Handoff);
+  if (!handoff) return false;
+  activityManager.replaceActivity(std::move(handoff));
+  return true;
+}
+
 bool startGlobalSyncProgress(const bool networkBootReady, const uint8_t readerOrientation) {
   if (activityManager.hasActivityNamed(KOReaderSyncActivity::NAME)) {
     LOG_DBG("MAIN", "Ignoring KOReader sync shortcut while sync is already active");
@@ -616,6 +625,11 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
         return false;
       }
       return startGlobalSyncProgress();
+    case CrossPointSettings::SHORT_PWRBTN::FETCH_SUBSTACK:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      return startSubstackFetch();
     case CrossPointSettings::SHORT_PWRBTN::FILE_TRANSFER:
       if (activityManager.canSnapshotForSleepOverlay()) {
         return false;
@@ -724,6 +738,8 @@ CrossPointSettings::SHORT_PWRBTN chordPowerAction(const ButtonShortcutController
       return Power::SYNC_PROGRESS;
     case Chord::NearbyPositionSync:
       return Power::NEARBY_POSITION_SYNC;
+    case Chord::FetchSubstack:
+      return Power::FETCH_SUBSTACK;
     case Chord::FileTransfer:
       return Power::FILE_TRANSFER;
     case Chord::CalibreWireless:
@@ -1506,6 +1522,18 @@ void setup() {
       case NetworkBootTarget::FILE_TRANSFER:
         launched = activityManager.resumeFileTransferFromNetworkBoot(snapshotPayload);
         break;
+      case NetworkBootTarget::SUBSTACK_FETCH: {
+        auto substackActivity = makeUniqueNoThrow<SubstackFetchActivity>(renderer, mappedInputManager,
+                                                                         SubstackFetchActivity::Stage::Network);
+        if (substackActivity) {
+          activityManager.replaceActivity(std::move(substackActivity));
+          launched = true;
+        } else {
+          LOG_ERR("MAIN", "OOM: Substack fetch activity after minimal boot (free=%u maxAlloc=%u)", ESP.getFreeHeap(),
+                  ESP.getMaxAllocHeap());
+        }
+        break;
+      }
       case NetworkBootTarget::MANAGE_FONTS: {
         auto fontsActivity = makeUniqueNoThrow<FontDownloadActivity>(renderer, mappedInputManager);
         if (fontsActivity) {

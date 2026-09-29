@@ -399,6 +399,8 @@ inline uint8_t shortcutRawValue(const ShortcutOptionCatalog catalog, const Cross
           return Chord::CHORD_SYNC_PROGRESS;
         case Action::NEARBY_POSITION_SYNC:
           return Chord::CHORD_NEARBY_POSITION_SYNC;
+        case Action::FETCH_SUBSTACK:
+          return Chord::CHORD_FETCH_SUBSTACK;
         case Action::FILE_TRANSFER:
           return Chord::CHORD_FILE_TRANSFER;
         case Action::CALIBRE_WIRELESS:

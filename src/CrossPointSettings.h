@@ -264,6 +264,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     // raw values or they can silently change an existing binding's behavior.
     PREVIOUS_PAGE = 31,
     NEARBY_POSITION_SYNC = 32,
+    FETCH_SUBSTACK = 33,
     SHORT_PWRBTN_COUNT
   };
 
@@ -302,6 +303,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     CHORD_TOGGLE_TOUCHSCREEN = 28,
     CHORD_PREVIOUS_PAGE = 29,
     CHORD_NEARBY_POSITION_SYNC = 30,
+    CHORD_FETCH_SUBSTACK = 31,
     POWER_CHORD_ACTION_COUNT
   };
 
